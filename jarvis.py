@@ -1,125 +1,89 @@
 import speech_recognition as sr
 import pyttsx3
 import datetime
-import wikipedia
 import webbrowser
+import wikipedia
+import pywhatkit
 import os
-import sys
 
-# Initialize the speech engine
 engine = pyttsx3.init()
+engine.setProperty('rate', 150)  # Speed of speech
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[1].id)  # Female voice
 
 def speak(text):
-    """Convert text to speech."""
     engine.say(text)
     engine.runAndWait()
 
-def wish_user():
-    """Greet the user according to the time."""
-    hour = datetime.datetime.now().hour
-    if 5 <= hour < 12:
-        speak("Good Morning!")
-    elif 12 <= hour < 18:
-        speak("Good Afternoon!")
-    elif 18 <= hour < 22:
-        speak("Good Evening!")
-    else:
-        speak("Hello!")
-    speak("I am Jarvis, your assistant. How can I help you today?")
-
-def take_command():
-    """Listen for voice input and return recognized text."""
-    r = sr.Recognizer()
+def listen_command():
+    recognizer = sr.Recognizer()
     with sr.Microphone() as source:
         print("Listening...")
-        r.pause_threshold = 1
-        audio = r.listen(source)
+        recognizer.pause_threshold = 1
+        audio = recognizer.listen(source)
 
     try:
         print("Recognizing...")
-        query = r.recognize_google(audio, language='en-in')
-        print(f"User said: {query}\n")
-    except sr.UnknownValueError:
-        speak("Sorry, I did not understand that. Please say that again.")
-        return ""
-    except sr.RequestError:
-        speak("Sorry, the speech service is down.")
-        return ""
-    return query.lower()
-
-def open_website(site):
-    """Open a website based on user command."""
-    sites = {
-        "youtube": "https://www.youtube.com",
-        "google": "https://www.google.com",
-        "github": "https://www.github.com",
-        "stackoverflow": "https://stackoverflow.com"
-    }
-    if site in sites:
-        speak(f"Opening {site}")
-        webbrowser.open(sites[site])
-    else:
-        speak("Sorry, I don't know that website.")
-
-def tell_time():
-    """Tell the current time."""
-    str_time = datetime.datetime.now().strftime("%I:%M %p")
-    speak(f"The time is {str_time}")
-
-def wikipedia_search(query):
-    """Search Wikipedia and read summary."""
-    speak("Searching Wikipedia...")
-    try:
-        results = wikipedia.summary(query, sentences=2)
-        speak("According to Wikipedia")
-        speak(results)
-    except wikipedia.DisambiguationError as e:
-        speak("There are multiple results. Please be more specific.")
-    except wikipedia.PageError:
-        speak("Sorry, I could not find information on that.")
+        command = recognizer.recognize_google(audio)
+        print(f"You said: {command}")
+        return command.lower()
     except Exception as e:
-        speak("An error occurred while searching Wikipedia.")
+        print("Could not understand. Try again.")
+        speak("Sorry, I did not catch that.")
+        return "none"
 
-def main():
-    wish_user()
+def greet_user():
+    hour = datetime.datetime.now().hour
+    if 0 <= hour < 12:
+        speak("Good morning!")
+    elif 12 <= hour < 18:
+        speak("Good afternoon!")
+    else:
+        speak("Good evening!")
+    speak("I am Jarvis. How can I help you today?")
+
+def run_jarvis():
+    greet_user()
     while True:
-        query = take_command()
-        if query == "":
-            continue
+        command = listen_command()
 
-        # Exiting the assistant
-        if "exit" in query or "quit" in query or "stop" in query:
-            speak("Goodbye! Have a nice day.")
-            sys.exit()
+        if 'time' in command:
+            time = datetime.datetime.now().strftime('%I:%M %p')
+            speak(f"The time is {time}")
 
-        # Open websites commands
-        elif "open youtube" in query:
-            open_website("youtube")
-        elif "open google" in query:
-            open_website("google")
-        elif "open github" in query:
-            open_website("github")
-        elif "open stackoverflow" in query:
-            open_website("stackoverflow")
+        elif 'date' in command:
+            date = datetime.datetime.now().strftime('%B %d, %Y')
+            speak(f"Today is {date}")
 
-        # Wikipedia search
-        elif "wikipedia" in query:
-            search_term = query.replace("wikipedia", "").strip()
-            if search_term:
-                wikipedia_search(search_term)
-            else:
-                speak("Please tell me what you want to search on Wikipedia.")
+        elif 'open youtube' in command:
+            webbrowser.open("https://youtube.com")
+            speak("Opening YouTube")
 
-        # Tell time
-        elif "time" in query:
-            tell_time()
+        elif 'open google' in command:
+            webbrowser.open("https://google.com")
+            speak("Opening Google")
+
+        elif 'play' in command:
+            song = command.replace('play', '')
+            speak(f"Playing {song}")
+            pywhatkit.playonyt(song)
+
+        elif 'who is' in command:
+            person = command.replace('who is', '')
+            info = wikipedia.summary(person, 2)
+            speak(info)
+
+        elif 'open notepad' in command:
+            os.system("notepad.exe")
+
+        elif 'exit' in command or 'quit' in command:
+            speak("Goodbye!")
+            break
 
         else:
-            speak("Sorry, I don't have the capability to do that yet.")
+            speak("I am not sure how to do that yet.")
 
 if __name__ == "__main__":
-    main()
+    run_jarvis()
 
 
-
-    
